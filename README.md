@@ -1,4 +1,5 @@
 # Crime-Analysis
+Author: Lucjan Szulim
 This project analyzes crime patterns in Montgomery County by combining multiple public datasets to better understand how short-term arrest activity relates to broader crime trends and police dispatch behavior.
 # Project Overview
 The goal of this project is to explore relationships between reported crimes, police dispatch incidents, and recent arrest data. By applying statistical analysis and data visualization techniques, this project aims to identify patterns in when, where, and how criminal activity occurs—and whether short-term arrest trends reflect larger crime dynamics.
