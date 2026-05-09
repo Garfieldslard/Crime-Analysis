@@ -1,0 +1,1204 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "provenance": [],
+      "authorship_tag": "ABX9TyPW+01muvabwUCldHjoPXnl",
+      "include_colab_link": true
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "view-in-github",
+        "colab_type": "text"
+      },
+      "source": [
+        "<a href=\"https://colab.research.google.com/github/Garfieldslard/Crime-Analysis/blob/main/Crime-Analysis/ingestion%20/scripts/Ingestion.py\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "## 1. Loading Data, Filtering & Dropping NA Columns"
+      ],
+      "metadata": {
+        "id": "mQUpXQ4AaPkk"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "### 1.1 Load Raw CSVs"
+      ],
+      "metadata": {
+        "id": "abYM4_FMYjI7"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "import pandas as pd\n",
+        "\n",
+        "# Load datasets\n",
+        "\n",
+        "crime_df = pd.read_csv('Crime.csv') # You may need to change your file path\n",
+        "dispatch_df = pd.read_csv('Police_Dispatched_Incidents.csv') # You may need to change your file path"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "R6Boe5-TUUsy",
+        "outputId": "800896e4-4274-4a37-999f-52507af1cf0f"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stderr",
+          "text": [
+            "/tmp/ipykernel_1843/2184388659.py:5: DtypeWarning: Columns (1) have mixed types. Specify dtype option on import or set low_memory=False.\n",
+            "  crime_df = pd.read_csv('Crime.csv') # You may need to change your file path\n",
+            "/tmp/ipykernel_1843/2184388659.py:6: DtypeWarning: Columns (2,11,16) have mixed types. Specify dtype option on import or set low_memory=False.\n",
+            "  dispatch_df = pd.read_csv('Police_Dispatched_Incidents.csv') # You may need to change your file path\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "print(crime_df.columns)\n",
+        "print(dispatch_df.columns)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "6QJvRKW-UpAl",
+        "outputId": "7ea99aee-2258-41ee-bd93-e8f9ba6d1182"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Index(['Incident ID', 'Offence Code', 'CR Number', 'Dispatch Date / Time',\n",
+            "       'Start_Date_Time', 'End_Date_Time', 'NIBRS Code', 'Victims',\n",
+            "       'Crime Name1', 'Crime Name2', 'Crime Name3', 'Police District Name',\n",
+            "       'Block Address', 'City', 'State', 'Zip Code', 'Agency', 'Place',\n",
+            "       'Sector', 'Beat', 'PRA', 'Address Number', 'Street Prefix',\n",
+            "       'Street Name', 'Street Suffix', 'Street Type', 'Latitude', 'Longitude',\n",
+            "       'Police District Number', 'Location'],\n",
+            "      dtype='object')\n",
+            "Index(['Incident_ID', 'Crime Reports', 'Crash Reports', 'Start Time',\n",
+            "       'End Time', 'Priority', 'Initial Type', 'Close Type', 'Address', 'City',\n",
+            "       'State', 'Zip', 'Longitude', 'Latitude', 'Police District Number',\n",
+            "       'Beat', 'PRA', 'CallTime CallRoute', 'Calltime Dispatch',\n",
+            "       'Calltime Arrive', 'Calltime Cleared', 'CallRoute Dispatch',\n",
+            "       'Dispatch Arrive', 'Arrive Cleared', 'Disposition Desc', 'Location'],\n",
+            "      dtype='object')\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "### 1.2 Convert To Datetime and Filter From 2025 Onward"
+      ],
+      "metadata": {
+        "id": "r6FNNXPxdIiw"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Convert to datetime\n",
+        "\n",
+        "crime_df['Start_Date_Time'] = pd.to_datetime(crime_df['Start_Date_Time'], errors='coerce')\n",
+        "dispatch_df['Start Time'] = pd.to_datetime(dispatch_df['Start Time'], errors='coerce')\n",
+        "\n",
+        "# Filter from 2025 onward\n",
+        "\n",
+        "cutoff = pd.Timestamp('2025-01-01')\n",
+        "\n",
+        "crime_filtered = crime_df[crime_df['Start_Date_Time'] >= cutoff]\n",
+        "dispatch_filtered = dispatch_df[dispatch_df['Start Time'] >= cutoff]\n",
+        "\n",
+        "# Check results\n",
+        "\n",
+        "print(\"Crime filtered rows:\", crime_filtered.shape[0])\n",
+        "print(\"Dispatch filtered rows:\", dispatch_filtered.shape[0])\n",
+        "\n",
+        "print(\"Crime date range:\", crime_filtered['Start_Date_Time'].min(), \"to\", crime_filtered['Start_Date_Time'].max())\n",
+        "print(\"Dispatch date range:\", dispatch_filtered['Start Time'].min(), \"to\", dispatch_filtered['Start Time'].max())"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "GY0x9udRUfXe",
+        "outputId": "107cd190-8fae-4eb2-d25b-c32177417b48"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Crime filtered rows: 59811\n",
+            "Dispatch filtered rows: 252157\n",
+            "Crime date range: 2025-01-01 00:00:00 to 2026-04-18 03:26:00\n",
+            "Dispatch date range: 2025-01-01 00:00:52 to 2026-04-20 12:15:07\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "### 1.3 Check Missing Values Per Column and Total NAs"
+      ],
+      "metadata": {
+        "id": "Ok7AZp8FaytU"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Missing values per column\n",
+        "\n",
+        "print(\"\\n--- Crime Filtered NA Count ---\")\n",
+        "print(crime_filtered.isna().sum())\n",
+        "\n",
+        "print(\"\\n--- Dispatch Filtered NA Count ---\")\n",
+        "print(dispatch_filtered.isna().sum())\n",
+        "\n",
+        "# Total missing values\n",
+        "\n",
+        "print(\"\\nTotal NAs in Crime (filtered):\", crime_filtered.isna().sum().sum())\n",
+        "print(\"Total NAs in Dispatch (filtered):\", dispatch_filtered.isna().sum().sum())"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "h2OkOb2MdiVT",
+        "outputId": "2419f0d6-b3ed-4f91-8e9f-b5a28a73dd1c"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "\n",
+            "--- Crime Filtered NA Count ---\n",
+            "Incident ID                   0\n",
+            "Offence Code                  0\n",
+            "CR Number                     0\n",
+            "Dispatch Date / Time       8464\n",
+            "Start_Date_Time               0\n",
+            "End_Date_Time             37945\n",
+            "NIBRS Code                    0\n",
+            "Victims                       0\n",
+            "Crime Name1                   0\n",
+            "Crime Name2                   0\n",
+            "Crime Name3                   0\n",
+            "Police District Name        406\n",
+            "Block Address              3976\n",
+            "City                         22\n",
+            "State                         9\n",
+            "Zip Code                    119\n",
+            "Agency                        0\n",
+            "Place                         0\n",
+            "Sector                        0\n",
+            "Beat                          0\n",
+            "PRA                           0\n",
+            "Address Number             3973\n",
+            "Street Prefix             57591\n",
+            "Street Name                 346\n",
+            "Street Suffix             59023\n",
+            "Street Type                 349\n",
+            "Latitude                      0\n",
+            "Longitude                     0\n",
+            "Police District Number        0\n",
+            "Location                      0\n",
+            "dtype: int64\n",
+            "\n",
+            "--- Dispatch Filtered NA Count ---\n",
+            "Incident_ID                    0\n",
+            "Crime Reports             205044\n",
+            "Crash Reports             243785\n",
+            "Start Time                     0\n",
+            "End Time                      24\n",
+            "Priority                       0\n",
+            "Initial Type                   0\n",
+            "Close Type                     0\n",
+            "Address                      235\n",
+            "City                           3\n",
+            "State                         29\n",
+            "Zip                           13\n",
+            "Longitude                      0\n",
+            "Latitude                       0\n",
+            "Police District Number         0\n",
+            "Beat                          28\n",
+            "PRA                           13\n",
+            "CallTime CallRoute             1\n",
+            "Calltime Dispatch          15363\n",
+            "Calltime Arrive            54293\n",
+            "Calltime Cleared              60\n",
+            "CallRoute Dispatch         15363\n",
+            "Dispatch Arrive            59011\n",
+            "Arrive Cleared             54318\n",
+            "Disposition Desc               0\n",
+            "Location                       0\n",
+            "dtype: int64\n",
+            "\n",
+            "Total NAs in Crime (filtered): 172223\n",
+            "Total NAs in Dispatch (filtered): 647583\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "### 1.4 Dropping rows with large amounts of NAs"
+      ],
+      "metadata": {
+        "id": "BQVwPOSsd9Wr"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "crime_filtered.columns = crime_filtered.columns.str.lower().str.strip()\n",
+        "dispatch_filtered.columns = dispatch_filtered.columns.str.lower().str.strip()\n",
+        "\n",
+        "crime = crime_filtered.drop(columns=[\n",
+        "    'street prefix', 'street suffix', 'end_date_time'\n",
+        "], errors='ignore')\n",
+        "\n",
+        "disp = dispatch_filtered.drop(columns=[\n",
+        "    'crime reports', 'crash reports'\n",
+        "], errors='ignore')"
+      ],
+      "metadata": {
+        "id": "MouQZoOueAZX"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "---\n",
+        "## 2. Feature Engineering\n",
+        "\n",
+        "All new columns are derived — nothing is imputed or fabricated from outside sources."
+      ],
+      "metadata": {
+        "id": "dj0HASCKRHRj"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "### 2.1 Dispatch — Datetime Features\n",
+        "\n"
+      ],
+      "metadata": {
+        "id": "Bq1_KjdsRUJK"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "disp['start_dt'] = pd.to_datetime(disp['start time'], errors='coerce')\n",
+        "disp['end_dt']   = pd.to_datetime(disp['end time'],   errors='coerce')\n",
+        "\n",
+        "disp['hour']        = disp['start_dt'].dt.hour\n",
+        "disp['day_of_week'] = disp['start_dt'].dt.dayofweek          # 0=Mon … 6=Sun\n",
+        "disp['dow_name']    = disp['start_dt'].dt.day_name()\n",
+        "disp['month']       = disp['start_dt'].dt.month\n",
+        "disp['month_name']  = disp['start_dt'].dt.month_name()\n",
+        "disp['is_weekend']  = disp['day_of_week'].isin([5, 6]).astype(int)\n",
+        "\n",
+        "# Time-of-day bucket\n",
+        "def hour_bucket(h):\n",
+        "    if   0 <= h <  6: return 'Late Night (0–5)'\n",
+        "    elif 6 <= h < 12: return 'Morning (6–11)'\n",
+        "    elif 12 <= h < 18: return 'Afternoon (12–17)'\n",
+        "    else:              return 'Evening (18–23)'\n",
+        "\n",
+        "disp['time_of_day'] = disp['hour'].apply(hour_bucket)\n",
+        "\n",
+        "print(disp[['start_dt','hour','dow_name','month_name','is_weekend','time_of_day']].head(5))"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "ySY1l5IXRJDx",
+        "outputId": "0a1a646a-da3f-40c6-c19e-508b0f2cdbc1"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "             start_dt  hour dow_name month_name  is_weekend        time_of_day\n",
+            "0 2026-04-20 12:15:07    12   Monday      April           0  Afternoon (12–17)\n",
+            "1 2026-04-20 11:13:29    11   Monday      April           0     Morning (6–11)\n",
+            "2 2026-04-20 11:25:33    11   Monday      April           0     Morning (6–11)\n",
+            "3 2026-04-20 11:19:35    11   Monday      April           0     Morning (6–11)\n",
+            "4 2026-04-20 09:08:36     9   Monday      April           0     Morning (6–11)\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "### 2.2 Dispatch — Response Time & Workload Features"
+      ],
+      "metadata": {
+        "id": "QNxZ95LKRYIv"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# All time columns are already in SECONDS\n",
+        "# Cap extreme outliers at 99th percentile to reduce skew impact on plots\n",
+        "# (keep originals; capped versions used only for visualization)\n",
+        "RT_CAP = disp['dispatch arrive'].quantile(0.99)\n",
+        "\n",
+        "disp['response_time_s']    = disp['dispatch arrive']                  # dispatch → arrived (seconds)\n",
+        "disp['response_time_min']  = disp['dispatch arrive'] / 60             # minutes\n",
+        "disp['response_time_cap']  = disp['response_time_s'].clip(upper=RT_CAP)  # capped for viz\n",
+        "\n",
+        "disp['total_incident_s']   = disp['calltime cleared']                 # call → cleared\n",
+        "disp['total_incident_min'] = disp['calltime cleared'] / 60\n",
+        "\n",
+        "disp['queue_time_s']       = disp['callroute dispatch']               # routed → dispatched\n",
+        "disp['onscene_time_s']     = disp['arrive cleared']                   # arrived → cleared\n",
+        "\n",
+        "print('Response time (dispatch→arrive) stats (minutes):')\n",
+        "print(disp['response_time_min'].describe().round(2))"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "lvhELozURfIH",
+        "outputId": "2a248c8c-2799-4450-f86e-cc0d5f9cbc39"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Response time (dispatch→arrive) stats (minutes):\n",
+            "count    193146.00\n",
+            "mean         11.81\n",
+            "std          27.81\n",
+            "min           0.00\n",
+            "25%           4.08\n",
+            "50%           7.97\n",
+            "75%          14.05\n",
+            "max        4410.63\n",
+            "Name: response_time_min, dtype: float64\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "A max of 4410 minutes or 73 hours for dipatch response time is not a real response time, it is most likely a data entry error, unclosed call or an incident which was open across multiple different shifts. The standard deviation of 27.81 on a median of 7.97 confirms the distribution is still being pulled hard by these extreme values even after the 99th percentile cap."
+      ],
+      "metadata": {
+        "id": "u4gYm5MJVHFX"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Look at the extreme tail more carefully\n",
+        "rt = disp['dispatch arrive'] / 60  # in minutes\n",
+        "\n",
+        "print(rt.quantile([0.90, 0.95, 0.97, 0.98, 0.99, 0.995, 0.999, 1.0]))\n",
+        "print()\n",
+        "\n",
+        "# How many rows are above various thresholds?\n",
+        "for threshold in [60, 120, 180, 240, 480]:\n",
+        "    n = (rt > threshold).sum()\n",
+        "    print(f'> {threshold} min ({threshold//60}h): {n:,} rows ({n/len(rt):.2%})')"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "6nnlYOcgUujZ",
+        "outputId": "f6b34a61-fe35-4917-8e7c-784e21f09e89"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "0.900      24.033333\n",
+            "0.950      34.200000\n",
+            "0.970      43.300000\n",
+            "0.980      51.685000\n",
+            "0.990      68.950000\n",
+            "0.995      90.259167\n",
+            "0.999     157.480667\n",
+            "1.000    4410.633333\n",
+            "Name: dispatch arrive, dtype: float64\n",
+            "\n",
+            "> 60 min (1h): 2,695 rows (1.07%)\n",
+            "> 120 min (2h): 415 rows (0.16%)\n",
+            "> 180 min (3h): 134 rows (0.05%)\n",
+            "> 240 min (4h): 50 rows (0.02%)\n",
+            "> 480 min (8h): 20 rows (0.01%)\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "The distribution is good up to the 99.5th percentile (90 min), then jumps hard, 157 min at 99.9th and 4,410 at the max with only 20 rows above 8 hours. There's no natural cluster between 90 and 4,410, which means those extreme values are probably unclosed records or data entry errors, not real dispatch responses."
+      ],
+      "metadata": {
+        "id": "ONtQhxJKWD0U"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "RT_THRESHOLD = 120  # minutes\n",
+        "\n",
+        "disp['response_time_min'] = disp['dispatch arrive'] / 60\n",
+        "disp['rt_outlier'] = (disp['response_time_min'] > RT_THRESHOLD).astype(int)\n",
+        "disp_clean = disp[disp['rt_outlier'] == 0].copy()\n",
+        "\n",
+        "removed = disp['rt_outlier'].sum()\n",
+        "print(f'Flagged as outliers: {removed:,} rows ({removed/len(disp):.2%})')"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "frywnYS_U8rg",
+        "outputId": "1468c7a5-64c0-4448-b587-66f1ae4070a5"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Flagged as outliers: 415 rows (0.16%)\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "We removed 415 rows (0.16%) of dispatch while getting rid of values which were impossible, new mean and std will drop substantially and actually reflect the real distribution. You see the new distribution below."
+      ],
+      "metadata": {
+        "id": "ci1MwgZ_Xuah"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "print(f'Analysis dataset: {len(disp_clean):,} rows')\n",
+        "print()\n",
+        "print(disp_clean['response_time_min'].describe().round(2))"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "GRyqVXLHYAY8",
+        "outputId": "7ee5ffd0-dca9-4c1f-daf4-ea6135284d3c"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Analysis dataset: 251,742 rows\n",
+            "\n",
+            "count    192731.00\n",
+            "mean         11.29\n",
+            "std          12.28\n",
+            "min           0.00\n",
+            "25%           4.08\n",
+            "50%           7.95\n",
+            "75%          13.98\n",
+            "max         119.98\n",
+            "Name: response_time_min, dtype: float64\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "print(f'Total dispatch records:        {len(disp):,}')\n",
+        "print(f'After outlier removal:         {len(disp_clean):,}')\n",
+        "print(f'  With response time recorded: {disp_clean[\"response_time_min\"].notna().sum():,}')\n",
+        "print(f'  No arrival recorded (NaN):   {disp_clean[\"response_time_min\"].isna().sum():,}')"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "DOqmJFr3YjjS",
+        "outputId": "0fd31abb-894f-4968-ae39-43b504ca9fd1"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Total dispatch records:        252,157\n",
+            "After outlier removal:         251,742\n",
+            "  With response time recorded: 192,731\n",
+            "  No arrival recorded (NaN):   59,011\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "### 2.3 Dispatch — Incident Type Features"
+      ],
+      "metadata": {
+        "id": "C8XKMR2jRdHK"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Flag whether the incident type changed from initial call to close\n",
+        "disp_clean['type_changed'] = (disp_clean['initial type'] != disp_clean['close type']).astype(int)\n",
+        "\n",
+        "# Priority bucket: high / medium / standard / low\n",
+        "priority_map = {0: 'P0-Emergency', 1: 'P1-High', 2: 'P2-Medium', 3: 'P3-Low', 4: 'P4-Standard'}\n",
+        "disp_clean['priority_label'] = disp_clean['priority'].map(priority_map)\n",
+        "\n",
+        "# Broad incident category from initial type (first word / known groupings)\n",
+        "def broad_category(t):\n",
+        "    if pd.isna(t): return 'Unknown'\n",
+        "    t = t.upper()\n",
+        "    if 'DOMESTIC' in t:                         return 'Domestic'\n",
+        "    if 'ASSAULT' in t or 'SHOOTING' in t \\\n",
+        "       or 'STABBING' in t or 'ROBBERY' in t:    return 'Violent'\n",
+        "    if 'THEFT' in t or 'BURGLARY' in t \\\n",
+        "       or 'LARCENY' in t:                       return 'Theft/Burglary'\n",
+        "    if 'TRAFFIC' in t or 'CRASH' in t \\\n",
+        "       or 'ACCIDENT' in t:                      return 'Traffic'\n",
+        "    if 'SUSPICIOUS' in t:                       return 'Suspicious'\n",
+        "    if 'WELFARE' in t or 'MENTAL' in t:         return 'Welfare/Mental'\n",
+        "    if 'DISTURBANCE' in t or 'NUISANCE' in t:   return 'Disturbance'\n",
+        "    if 'TRESPASS' in t:                         return 'Trespassing'\n",
+        "    if 'DRUG' in t or 'NARCOTIC' in t:          return 'Drugs'\n",
+        "    if 'PARKING' in t:                          return 'Parking'\n",
+        "    return 'Other'\n",
+        "\n",
+        "disp_clean['incident_category'] = disp_clean['initial type'].apply(broad_category)\n",
+        "\n",
+        "print('Incident category distribution:')\n",
+        "print(disp_clean['incident_category'].value_counts())"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "FE1rVv3CRZ6d",
+        "outputId": "49c4b33f-8a99-4009-9f92-1b80e88c7dff"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Incident category distribution:\n",
+            "incident_category\n",
+            "Other             79671\n",
+            "Theft/Burglary    41208\n",
+            "Traffic           34775\n",
+            "Welfare/Mental    23102\n",
+            "Suspicious        19072\n",
+            "Domestic          14960\n",
+            "Disturbance       12534\n",
+            "Trespassing       11202\n",
+            "Violent            7917\n",
+            "Parking            7301\n",
+            "Name: count, dtype: int64\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "### 2.4 Crime — Datetime Features"
+      ],
+      "metadata": {
+        "id": "6cp3yCCqRqNy"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "crime['start_dt']   = pd.to_datetime(crime['start_date_time'], errors='coerce')\n",
+        "crime['hour']       = crime['start_dt'].dt.hour\n",
+        "crime['day_of_week']= crime['start_dt'].dt.dayofweek\n",
+        "crime['dow_name']   = crime['start_dt'].dt.day_name()\n",
+        "crime['month']      = crime['start_dt'].dt.month\n",
+        "crime['is_weekend'] = crime['day_of_week'].isin([5, 6]).astype(int)\n",
+        "crime['time_of_day']= crime['hour'].apply(hour_bucket)\n",
+        "\n",
+        "print(crime[['start_dt','hour','dow_name','time_of_day']].head(3))"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "ElltkYMoRl61",
+        "outputId": "15829538-2f21-4d89-ca76-30fbe5a2b455"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "             start_dt  hour  dow_name       time_of_day\n",
+            "0 2026-04-18 03:26:00     3  Saturday  Late Night (0–5)\n",
+            "1 2026-04-18 01:49:00     1  Saturday  Late Night (0–5)\n",
+            "2 2026-04-17 22:43:00    22    Friday   Evening (18–23)\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "### 2.5 Geographic Join — Crime Rate per District\n",
+        "\n",
+        "We aggregate crime counts per police district and merge onto dispatch, giving each dispatch call a measure of how crime-dense its district is."
+      ],
+      "metadata": {
+        "id": "MzLyYrRfRynp"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "crime_by_district = (\n",
+        "    crime.groupby('police district number')\n",
+        "         .size()\n",
+        "         .reset_index(name='district_crime_count')\n",
+        ")\n",
+        "\n",
+        "# Crime count per PRA (finer geography)\n",
+        "crime_by_pra = (\n",
+        "    crime.groupby('pra')\n",
+        "         .size()\n",
+        "         .reset_index(name='pra_crime_count')\n",
+        ")\n",
+        "crime_by_pra['pra'] = pd.to_numeric(crime_by_pra['pra'], errors='coerce')\n",
+        "\n",
+        "# Merge onto dispatch\n",
+        "disp_clean = disp_clean.merge(crime_by_district, on='police district number', how='left')\n",
+        "disp_clean['pra_float'] = pd.to_numeric(disp_clean['pra'], errors='coerce')\n",
+        "disp_clean = disp_clean.merge(crime_by_pra, left_on='pra_float', right_on='pra', how='left', suffixes=('', '_crime'))\n",
+        "\n",
+        "print('District crime count merged onto dispatch:')\n",
+        "print(disp_clean[['police district number','district_crime_count','pra_crime_count']].head(5))"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "4IHTk0voRwxL",
+        "outputId": "b6a24a0d-babb-4736-bf50-992d4debd7c4"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "District crime count merged onto dispatch:\n",
+            "  police district number  district_crime_count  pra_crime_count\n",
+            "0                     3D               12451.0            409.0\n",
+            "1                     5D                7594.0             86.0\n",
+            "2                     3D               12451.0            153.0\n",
+            "3                     4D               10154.0             62.0\n",
+            "4                     6D                9339.0            476.0\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "### 2.6 Create missingness indicators - Dispatch Data"
+      ],
+      "metadata": {
+        "id": "HaWMaVxtgNk7"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "disp_clean['no_arrival']       = disp_clean['calltime arrive'].isna().astype(int)\n",
+        "disp_clean['never_dispatched'] = disp_clean['calltime dispatch'].isna().astype(int)"
+      ],
+      "metadata": {
+        "id": "JytBWGH4gWc4"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "### 2.7 Creating dispatch_rt - Dispatch Response Time Dataset"
+      ],
+      "metadata": {
+        "id": "hOPupUeifif5"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "disp_rt = disp_clean[\n",
+        "    (disp_clean['calltime arrive'].notna()) &\n",
+        "    (disp_clean['response_time_min'] >= 1)\n",
+        "].copy()\n",
+        "\n",
+        "print(f'dispatch_rt: {len(disp_rt):,} rows')"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "AEsiucEnfhEk",
+        "outputId": "a2917639-5f11-403e-fb6e-44945d6c9641"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "dispatch_rt: 178,030 rows\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "def hour_bucket(h):\n",
+        "    if   0 <= h <  6: return 'Late Night (0–5)'\n",
+        "    elif 6 <= h < 12: return 'Morning (6–11)'\n",
+        "    elif 12 <= h < 18: return 'Afternoon (12–17)'\n",
+        "    else:              return 'Evening (18–23)'\n",
+        "\n",
+        "crime['start_dt']              = pd.to_datetime(crime['start_date_time'], errors='coerce')\n",
+        "crime['hour']                  = crime['start_dt'].dt.hour\n",
+        "crime['day_of_week']           = crime['start_dt'].dt.dayofweek\n",
+        "crime['dow_name']              = crime['start_dt'].dt.day_name()\n",
+        "crime['month']                 = crime['start_dt'].dt.month\n",
+        "crime['is_weekend']            = crime['day_of_week'].isin([5, 6]).astype(int)\n",
+        "crime['time_of_day']           = crime['hour'].apply(hour_bucket)\n",
+        "crime['unlinked_to_dispatch']  = crime['dispatch date / time'].isna().astype(int)\n",
+        "\n",
+        "# Verify before saving\n",
+        "print(crime.columns.tolist())\n",
+        "crime.to_csv('crime.csv', index=False)\n"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "zBxJY3xF7wd_",
+        "outputId": "754a0761-2a9d-4ceb-caf0-82334e94d8f0"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "['incident id', 'offence code', 'cr number', 'dispatch date / time', 'start_date_time', 'nibrs code', 'victims', 'crime name1', 'crime name2', 'crime name3', 'police district name', 'block address', 'city', 'state', 'zip code', 'agency', 'place', 'sector', 'beat', 'pra', 'address number', 'street name', 'street type', 'latitude', 'longitude', 'police district number', 'location', 'start_dt', 'hour', 'day_of_week', 'dow_name', 'month', 'is_weekend', 'time_of_day', 'unlinked_to_dispatch']\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "### 2.9 Downloading cleaned files"
+      ],
+      "metadata": {
+        "id": "LLIO9pkChrK5"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "crime.to_csv('crime_clean.csv', index=False)\n",
+        "disp_clean.to_csv('dispatch_clean.csv', index=False)\n",
+        "disp_rt.to_csv('dispatch_rt.csv', index=False)\n",
+        "\n",
+        "from google.colab import files\n",
+        "\n",
+        "files.download('crime_clean.csv')\n",
+        "files.download('dispatch_clean.csv')\n",
+        "files.download('dispatch_rt.csv')"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 69
+        },
+        "id": "SxWyXREdhoyY",
+        "outputId": "d7d5170d-aeaf-439c-c696-82c446de7b38"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "display_data",
+          "data": {
+            "text/plain": [
+              "<IPython.core.display.Javascript object>"
+            ],
+            "application/javascript": [
+              "\n",
+              "    async function download(id, filename, size) {\n",
+              "      if (!google.colab.kernel.accessAllowed) {\n",
+              "        return;\n",
+              "      }\n",
+              "      const div = document.createElement('div');\n",
+              "      const label = document.createElement('label');\n",
+              "      label.textContent = `Downloading \"${filename}\": `;\n",
+              "      div.appendChild(label);\n",
+              "      const progress = document.createElement('progress');\n",
+              "      progress.max = size;\n",
+              "      div.appendChild(progress);\n",
+              "      document.body.appendChild(div);\n",
+              "\n",
+              "      const buffers = [];\n",
+              "      let downloaded = 0;\n",
+              "\n",
+              "      const channel = await google.colab.kernel.comms.open(id);\n",
+              "      // Send a message to notify the kernel that we're ready.\n",
+              "      channel.send({})\n",
+              "\n",
+              "      for await (const message of channel.messages) {\n",
+              "        // Send a message to notify the kernel that we're ready.\n",
+              "        channel.send({})\n",
+              "        if (message.buffers) {\n",
+              "          for (const buffer of message.buffers) {\n",
+              "            buffers.push(buffer);\n",
+              "            downloaded += buffer.byteLength;\n",
+              "            progress.value = downloaded;\n",
+              "          }\n",
+              "        }\n",
+              "      }\n",
+              "      const blob = new Blob(buffers, {type: 'application/binary'});\n",
+              "      const a = document.createElement('a');\n",
+              "      a.href = window.URL.createObjectURL(blob);\n",
+              "      a.download = filename;\n",
+              "      div.appendChild(a);\n",
+              "      a.click();\n",
+              "      div.remove();\n",
+              "    }\n",
+              "  "
+            ]
+          },
+          "metadata": {}
+        },
+        {
+          "output_type": "display_data",
+          "data": {
+            "text/plain": [
+              "<IPython.core.display.Javascript object>"
+            ],
+            "application/javascript": [
+              "download(\"download_c8ad8623-922c-4e1d-a297-1cd4e8cd4cbc\", \"crime_clean.csv\", 21256367)"
+            ]
+          },
+          "metadata": {}
+        },
+        {
+          "output_type": "display_data",
+          "data": {
+            "text/plain": [
+              "<IPython.core.display.Javascript object>"
+            ],
+            "application/javascript": [
+              "\n",
+              "    async function download(id, filename, size) {\n",
+              "      if (!google.colab.kernel.accessAllowed) {\n",
+              "        return;\n",
+              "      }\n",
+              "      const div = document.createElement('div');\n",
+              "      const label = document.createElement('label');\n",
+              "      label.textContent = `Downloading \"${filename}\": `;\n",
+              "      div.appendChild(label);\n",
+              "      const progress = document.createElement('progress');\n",
+              "      progress.max = size;\n",
+              "      div.appendChild(progress);\n",
+              "      document.body.appendChild(div);\n",
+              "\n",
+              "      const buffers = [];\n",
+              "      let downloaded = 0;\n",
+              "\n",
+              "      const channel = await google.colab.kernel.comms.open(id);\n",
+              "      // Send a message to notify the kernel that we're ready.\n",
+              "      channel.send({})\n",
+              "\n",
+              "      for await (const message of channel.messages) {\n",
+              "        // Send a message to notify the kernel that we're ready.\n",
+              "        channel.send({})\n",
+              "        if (message.buffers) {\n",
+              "          for (const buffer of message.buffers) {\n",
+              "            buffers.push(buffer);\n",
+              "            downloaded += buffer.byteLength;\n",
+              "            progress.value = downloaded;\n",
+              "          }\n",
+              "        }\n",
+              "      }\n",
+              "      const blob = new Blob(buffers, {type: 'application/binary'});\n",
+              "      const a = document.createElement('a');\n",
+              "      a.href = window.URL.createObjectURL(blob);\n",
+              "      a.download = filename;\n",
+              "      div.appendChild(a);\n",
+              "      a.click();\n",
+              "      div.remove();\n",
+              "    }\n",
+              "  "
+            ]
+          },
+          "metadata": {}
+        },
+        {
+          "output_type": "display_data",
+          "data": {
+            "text/plain": [
+              "<IPython.core.display.Javascript object>"
+            ],
+            "application/javascript": [
+              "download(\"download_66ae1c9e-a514-4c5f-a250-66d0030ac2e3\", \"dispatch_clean.csv\", 115849453)"
+            ]
+          },
+          "metadata": {}
+        },
+        {
+          "output_type": "display_data",
+          "data": {
+            "text/plain": [
+              "<IPython.core.display.Javascript object>"
+            ],
+            "application/javascript": [
+              "\n",
+              "    async function download(id, filename, size) {\n",
+              "      if (!google.colab.kernel.accessAllowed) {\n",
+              "        return;\n",
+              "      }\n",
+              "      const div = document.createElement('div');\n",
+              "      const label = document.createElement('label');\n",
+              "      label.textContent = `Downloading \"${filename}\": `;\n",
+              "      div.appendChild(label);\n",
+              "      const progress = document.createElement('progress');\n",
+              "      progress.max = size;\n",
+              "      div.appendChild(progress);\n",
+              "      document.body.appendChild(div);\n",
+              "\n",
+              "      const buffers = [];\n",
+              "      let downloaded = 0;\n",
+              "\n",
+              "      const channel = await google.colab.kernel.comms.open(id);\n",
+              "      // Send a message to notify the kernel that we're ready.\n",
+              "      channel.send({})\n",
+              "\n",
+              "      for await (const message of channel.messages) {\n",
+              "        // Send a message to notify the kernel that we're ready.\n",
+              "        channel.send({})\n",
+              "        if (message.buffers) {\n",
+              "          for (const buffer of message.buffers) {\n",
+              "            buffers.push(buffer);\n",
+              "            downloaded += buffer.byteLength;\n",
+              "            progress.value = downloaded;\n",
+              "          }\n",
+              "        }\n",
+              "      }\n",
+              "      const blob = new Blob(buffers, {type: 'application/binary'});\n",
+              "      const a = document.createElement('a');\n",
+              "      a.href = window.URL.createObjectURL(blob);\n",
+              "      a.download = filename;\n",
+              "      div.appendChild(a);\n",
+              "      a.click();\n",
+              "      div.remove();\n",
+              "    }\n",
+              "  "
+            ]
+          },
+          "metadata": {}
+        },
+        {
+          "output_type": "display_data",
+          "data": {
+            "text/plain": [
+              "<IPython.core.display.Javascript object>"
+            ],
+            "application/javascript": [
+              "download(\"download_20bbf874-a97e-4753-98c2-340683a17675\", \"dispatch_rt.csv\", 83160053)"
+            ]
+          },
+          "metadata": {}
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "---\n",
+        "\n",
+        "## Data Processing Summary — Dispatch Dataset\n",
+        "\n",
+        "Raw records:                    252,157\n",
+        "Outlier removal (RT > 120 min):    -415  (0.16%)\n",
+        "Analysis dataset:               251,742\n",
+        "\n",
+        "Within analysis dataset:\n",
+        "  Response time recorded:       192,731  (76.6%) → used for response time analysis\n",
+        "  No arrival recorded (NaN):     59,011  (23.4%) → flagged as no_arrival=1\n",
+        "\n",
+        "Analytic populations:\n",
+        "  - Temporal/volume analysis:   251,742  (full disp_clean)\n",
+        "  - Response time analysis:     192,731  (disp_clean where no_arrival==0)\n",
+        "  - Unresolved/cancelled calls:  59,011  (disp_clean where no_arrival==1)\n",
+        "\n",
+        "## Data Processing Summary — Crime Dataset\n",
+        "\n",
+        "Raw records:                     58,380\n",
+        "Records dropped:                      0  (no rows removed)\n",
+        "Analysis dataset:                58,380\n",
+        "\n",
+        "Key NA handling:\n",
+        "  - Police District Name (403 NAs) → filled via district number→name mapping\n",
+        "  - Dispatch Date / Time (8,223)   → flagged as unlinked_to_dispatch=1; rows retained\n",
+        "  - End_Date_Time (37,035)         → excluded from any duration analysis; rows retained\n",
+        "  - Street Prefix/Suffix (~57k)    → structural NAs (inapplicable), no action taken\n",
+        "  - City, State, Zip (<120 each)   → minor; retained as-is\n",
+        "\n",
+        "Analytic populations:\n",
+        "  - Full crime analysis:            58,380  (all records)\n",
+        "  - Crimes linked to dispatch:      50,157  (unlinked_to_dispatch==0)\n",
+        "  - Crimes not dispatched:           8,223  (unlinked_to_dispatch==1)\n",
+        "\n",
+        "---\n",
+        "\n",
+        "## Feature Engineering — New Variables Created\n",
+        "\n",
+        "### Dispatch Dataset\n",
+        "| Variable | Description | Source |\n",
+        "|---|---|---|\n",
+        "| `response_time_min` | Dispatch → arrival time in minutes | `dispatch arrive / 60` |\n",
+        "| `total_incident_min` | Call received → cleared in minutes | `calltime cleared / 60` |\n",
+        "| `queue_time_s` | Routed → dispatched (seconds) | `callroute dispatch` |\n",
+        "| `onscene_time_s` | Arrived → cleared (seconds) | `arrive cleared` |\n",
+        "| `rt_outlier` | 1 if response time > 120 min | derived |\n",
+        "| `no_arrival` | 1 if arrival time not recorded | derived |\n",
+        "| `never_dispatched` | 1 if call was never dispatched | derived |\n",
+        "| `has_crime_report` | 1 if a crime report number is linked | derived |\n",
+        "| `has_crash_report` | 1 if a crash report number is linked | derived |\n",
+        "| `type_changed` | 1 if initial type ≠ close type | derived |\n",
+        "| `priority_label` | Readable priority (P0-Emergency … P4-Standard) | `priority` |\n",
+        "| `incident_category` | Broad incident grouping (Violent, Domestic, Traffic, etc.) | `initial type` |\n",
+        "| `hour` | Hour of day (0–23) | `start time` |\n",
+        "| `day_of_week` | Day of week (0=Mon, 6=Sun) | `start time` |\n",
+        "| `dow_name` | Day name (Monday … Sunday) | `start time` |\n",
+        "| `month` | Month (1–12) | `start time` |\n",
+        "| `is_weekend` | 1 if Saturday or Sunday | `day_of_week` |\n",
+        "| `time_of_day` | Late Night / Morning / Afternoon / Evening | `hour` |\n",
+        "| `district_crime_count` | Total 2025 crime incidents in same district | joined from crime |\n",
+        "| `pra_crime_count` | Total 2025 crime incidents in same PRA | joined from crime |\n",
+        "\n",
+        "### Crime Dataset\n",
+        "| Variable | Description | Source |\n",
+        "|---|---|---|\n",
+        "| `hour` | Hour of day (0–23) | `start_date_time` |\n",
+        "| `day_of_week` | Day of week (0=Mon, 6=Sun) | `start_date_time` |\n",
+        "| `dow_name` | Day name (Monday … Sunday) | `start_date_time` |\n",
+        "| `month` | Month (1–12) | `start_date_time` |\n",
+        "| `is_weekend` | 1 if Saturday or Sunday | `day_of_week` |\n",
+        "| `time_of_day` | Late Night / Morning / Afternoon / Evening | `hour` |\n",
+        "| `unlinked_to_dispatch` | 1 if no dispatch timestamp recorded | `dispatch date / time` |\n",
+        "\n",
+        "---\n",
+        "\n",
+        "## Output Files\n",
+        "\n",
+        "| File | Rows | Description |\n",
+        "|---|---|---|\n",
+        "| `dispatch_clean.csv` | 251,742 | Full dispatch dataset, outliers removed, all features added |\n",
+        "| `dispatch_rt.csv` | 192,731 | Dispatch records with response time recorded (no_arrival==0) |\n",
+        "| `crime.csv` | 58,380 | Full crime dataset, NAs handled, all features added |\n",
+        "\n",
+        "---\n",
+        "\n",
+        "## Analytic Notes & Limitations\n",
+        "\n",
+        "- **Response time analysis** is limited to the 76.6% of dispatch calls where an officer arrival was recorded.\n",
+        "  The 59,011 no-arrival calls are retained separately and may represent cancelled, self-resolved,\n",
+        "  or administratively closed incidents.\n",
+        "- **Outlier threshold of 120 minutes** was selected after inspecting the empirical quantile distribution.\n",
+        "  Values above this threshold (n=415) showed no plausible clustering and likely represent unclosed records.\n",
+        "- **Crime and dispatch datasets are not directly row-matched.** Geographic joins (district, PRA)\n",
+        "  are used to link crime density to dispatch behavior; individual incident linkage is not available\n",
+        "  for all records.\n",
+        "- **Both datasets cover 2025 only**, filtered from the full Data Montgomery open data releases."
+      ],
+      "metadata": {
+        "id": "tRhidsrjZ0nK"
+      }
+    }
+  ]
+}
